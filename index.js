@@ -4,6 +4,7 @@ import express from "express";
 import mongoose from "mongoose";
 import { connectDB } from "./db.js";
 import Book from "./models/Book.js";
+import Author from "./models/Author.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,7 +41,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-// GET books with filtering, sorting and pagination
+// GET books with filtering, sorting, pagination and author
 app.get("/books", async (req, res) => {
   try {
     const { genre, sort } = req.query;
@@ -90,6 +91,7 @@ app.get("/books", async (req, res) => {
     const total = await Book.countDocuments(filter);
 
     const books = await Book.find(filter)
+      .populate("author")
       .sort(sortOption)
       .skip((page - 1) * limit)
       .limit(limit);
@@ -116,7 +118,7 @@ app.get("/books/:id", async (req, res) => {
       });
     }
 
-    const book = await Book.findById(id);
+    const book = await Book.findById(id).populate("author");
 
     if (!book) {
       return res.status(404).json({
@@ -133,8 +135,23 @@ app.get("/books/:id", async (req, res) => {
 // POST create book
 app.post("/books", async (req, res) => {
   try {
-    const book = new Book(req.body);
+    if (req.body.author !== undefined) {
+      if (!isValidId(req.body.author)) {
+        return res.status(400).json({
+          error: "Invalid author ID",
+        });
+      }
 
+      const author = await Author.findById(req.body.author);
+
+      if (!author) {
+        return res.status(404).json({
+          error: "Author not found",
+        });
+      }
+    }
+
+    const book = new Book(req.body);
     const savedBook = await book.save();
 
     res.status(201).json(savedBook);
@@ -154,6 +171,22 @@ app.put("/books/:id", async (req, res) => {
       });
     }
 
+    if (req.body.author !== undefined) {
+      if (!isValidId(req.body.author)) {
+        return res.status(400).json({
+          error: "Invalid author ID",
+        });
+      }
+
+      const author = await Author.findById(req.body.author);
+
+      if (!author) {
+        return res.status(404).json({
+          error: "Author not found",
+        });
+      }
+    }
+
     const updatedBook = await Book.findByIdAndUpdate(
       id,
       req.body,
@@ -161,7 +194,7 @@ app.put("/books/:id", async (req, res) => {
         new: true,
         runValidators: true,
       }
-    );
+    ).populate("author");
 
     if (!updatedBook) {
       return res.status(404).json({
@@ -196,6 +229,61 @@ app.delete("/books/:id", async (req, res) => {
 
     res.status(200).json({
       message: "Book deleted successfully",
+    });
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+// GET all authors
+app.get("/authors", async (req, res) => {
+  try {
+    const authors = await Author.find();
+
+    res.status(200).json(authors);
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+// POST create author
+app.post("/authors", async (req, res) => {
+  try {
+    const author = new Author(req.body);
+    const savedAuthor = await author.save();
+
+    res.status(201).json(savedAuthor);
+  } catch (error) {
+    handleError(error, res);
+  }
+});
+
+// GET books by author ID
+app.get("/authors/:id/books", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidId(id)) {
+      return res.status(400).json({
+        error: "Invalid author ID",
+      });
+    }
+
+    const author = await Author.findById(id);
+
+    if (!author) {
+      return res.status(404).json({
+        error: "Author not found",
+      });
+    }
+
+    const books = await Book.find({
+      author: id,
+    }).populate("author");
+
+    res.status(200).json({
+      author,
+      books,
     });
   } catch (error) {
     handleError(error, res);

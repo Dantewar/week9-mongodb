@@ -24,6 +24,11 @@ const bookSchema = new mongoose.Schema(
       min: [1000, "Published year must be at least 1000"],
       max: [2026, "Published year cannot be later than 2026"],
     },
+
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Author",
+    },
   },
   {
     timestamps: true,
