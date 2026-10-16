@@ -1,0 +1,28 @@
+{
+  "name": "week9-mongodb",
+  "version": "1.0.0",
+  "description": "A Library REST API built with Node.js, Express, MongoDB and Mongoose.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dantewar/week9-mongodb.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Dantewar/week9-mongodb/issues"
+  },
+  "homepage": "https://github.com/Dantewar/week9-mongodb#readme",
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "mongoose": "^9.11.2"
+  }
+}
