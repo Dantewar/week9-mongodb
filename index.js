@@ -40,12 +40,66 @@ app.get("/health", (req, res) => {
   });
 });
 
-// GET all books
+// GET books with filtering, sorting and pagination
 app.get("/books", async (req, res) => {
   try {
-    const books = await Book.find();
+    const { genre, sort } = req.query;
 
-    res.status(200).json(books);
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
+
+    if (
+      !Number.isSafeInteger(page) ||
+      !Number.isSafeInteger(limit) ||
+      page < 1 ||
+      limit < 1 ||
+      limit > 100
+    ) {
+      return res.status(400).json({
+        error: "Invalid page or limit",
+      });
+    }
+
+    if (
+      genre !== undefined &&
+      (typeof genre !== "string" ||
+        !["fantasy", "dystopian", "children", "classic"].includes(genre))
+    ) {
+      return res.status(400).json({
+        error: "Invalid genre",
+      });
+    }
+
+    if (
+      sort !== undefined &&
+      sort !== "publishedYear" &&
+      sort !== "-publishedYear"
+    ) {
+      return res.status(400).json({
+        error: "Invalid sort value",
+      });
+    }
+
+    const filter = genre ? { genre } : {};
+
+    const sortOption =
+      sort === "-publishedYear"
+        ? { publishedYear: -1, _id: 1 }
+        : { publishedYear: 1, _id: 1 };
+
+    const total = await Book.countDocuments(filter);
+
+    const books = await Book.find(filter)
+      .sort(sortOption)
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
+      page,
+      limit,
+      total,
+      data: books,
+    });
   } catch (error) {
     handleError(error, res);
   }
