@@ -10,6 +10,23 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+const isValidId = (id) => mongoose.isObjectIdOrHexString(id);
+
+const handleError = (error, res) => {
+  if (
+    error.name === "ValidationError" ||
+    error.name === "CastError"
+  ) {
+    return res.status(400).json({
+      error: error.message,
+    });
+  }
+
+  return res.status(500).json({
+    error: "Internal server error",
+  });
+};
+
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "MongoDB Library API is running",
@@ -30,9 +47,7 @@ app.get("/books", async (req, res) => {
 
     res.status(200).json(books);
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to fetch books",
-    });
+    handleError(error, res);
   }
 });
 
@@ -41,7 +56,7 @@ app.get("/books/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.isObjectIdOrHexString(id)) {
+    if (!isValidId(id)) {
       return res.status(400).json({
         error: "Invalid book ID",
       });
@@ -57,9 +72,7 @@ app.get("/books/:id", async (req, res) => {
 
     res.status(200).json(book);
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to fetch book",
-    });
+    handleError(error, res);
   }
 });
 
@@ -67,13 +80,12 @@ app.get("/books/:id", async (req, res) => {
 app.post("/books", async (req, res) => {
   try {
     const book = new Book(req.body);
+
     const savedBook = await book.save();
 
     res.status(201).json(savedBook);
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to create book",
-    });
+    handleError(error, res);
   }
 });
 
@@ -82,7 +94,7 @@ app.put("/books/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.isObjectIdOrHexString(id)) {
+    if (!isValidId(id)) {
       return res.status(400).json({
         error: "Invalid book ID",
       });
@@ -105,15 +117,7 @@ app.put("/books/:id", async (req, res) => {
 
     res.status(200).json(updatedBook);
   } catch (error) {
-    if (error.name === "ValidationError" || error.name === "CastError") {
-      return res.status(400).json({
-        error: error.message,
-      });
-    }
-
-    res.status(500).json({
-      error: "Failed to update book",
-    });
+    handleError(error, res);
   }
 });
 
@@ -122,7 +126,7 @@ app.delete("/books/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.isObjectIdOrHexString(id)) {
+    if (!isValidId(id)) {
       return res.status(400).json({
         error: "Invalid book ID",
       });
@@ -140,9 +144,7 @@ app.delete("/books/:id", async (req, res) => {
       message: "Book deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
-      error: "Failed to delete book",
-    });
+    handleError(error, res);
   }
 });
 
